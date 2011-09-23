@@ -1,5 +1,5 @@
 
-abmvc = require('abmvc')
+TF = require('tierfactory')
 mongodb = require('mongodb')
 Crypto = require 'crypto'
 
@@ -60,7 +60,7 @@ Authenticator =
         next request, response
 
       if Authenticator.authenticatedValue(request, response)
-        client = new mongodb.Db(abmvc.db.name, new mongodb.Server(abmvc.db.host, abmvc.db.port))
+        client = new mongodb.Db(TF.db.name, new mongodb.Server(TF.db.host, TF.db.port))
         
         id = new client.bson_serializer.ObjectID(Authenticator.authenticatedValue(request, response))
         query = { _id: id }
@@ -98,7 +98,7 @@ Authenticator =
         if username
           query = { '$or': [ {username}, {email:username} ] }
 
-          client = new mongodb.Db(abmvc.db.name, new mongodb.Server(abmvc.db.host, abmvc.db.port))
+          client = new mongodb.Db(TF.db.name, new mongodb.Server(TF.db.host, TF.db.port))
           client.open (error)->
             return on_error(error) if error
             client.collection 'users', (error, collection)->

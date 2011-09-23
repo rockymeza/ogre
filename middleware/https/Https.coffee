@@ -1,5 +1,5 @@
 
-abmvc = require 'abmvc'
+TF = require 'tierfactory'
 
 redirect = (options)->
         options = {redirect:options} if options and typeof options != 'object'
@@ -9,7 +9,7 @@ redirect = (options)->
         else if options
           response.redirect options.redirect, options.status
         else
-          throw abmvc.FileNotFound 'This page must be viewed over https'
+          throw TF.FileNotFound 'This page must be viewed over https'
     
 requireHttps = (options = null)->
   (action)->

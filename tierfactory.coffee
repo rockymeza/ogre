@@ -4,8 +4,8 @@ path = require 'path'
 yaml = require 'yaml'
 _ = require 'underscore'
 
-abmvc = (server, app_dir)->
-  abmvc.app_dir = app_dir
+TF = (server, app_dir)->
+  TF.app_dir = app_dir
   server.reverse = (action_name)-> '/url'
   
   # default views location
@@ -16,14 +16,14 @@ abmvc = (server, app_dir)->
     loadHelpers server, ->
       loadDatabase server, ->
         loadRoutes server, -> 
-          console.log 'abmvc successfully loaded'
+          console.log 'TF successfully loaded'
 
 ##|
 ##|  OTHER RESOURCES
 ##|
-abmvc.signedCookieParser = require('./signedCookieParser');
-abmvc.FileNotFound = require('./errors/FileNotFound')
-module.exports = abmvc
+TF.signedCookieParser = require('./signedCookieParser');
+TF.FileNotFound = require('./errors/FileNotFound')
+module.exports = TF
 
 
 ##|
@@ -31,7 +31,7 @@ module.exports = abmvc
 ##|
 loadErrorHanders = (server, callback)->
   server.error (err, req, res, next)->
-    if err instanceof abmvc.FileNotFound
+    if err instanceof TF.FileNotFound
       res.render '404'
     else
       next(err);
@@ -39,16 +39,16 @@ loadErrorHanders = (server, callback)->
 
 
 loadDatabase = (server, callback)->
-  db_path = abmvc.app_dir + '/config/database.coffee'
+  db_path = TF.app_dir + '/config/database.coffee'
   path.exists db_path, (exists)->
     if exists
-      abmvc.db = _.extend { host: '127.0.0.1', port: 27017 }, require(db_path)
-      if not abmvc.db then throw new Error "name is a required property of database.coffee"
+      TF.db = _.extend { host: '127.0.0.1', port: 27017 }, require(db_path)
+      if not TF.db then throw new Error "name is a required property of database.coffee"
     callback()
 
 
 loadRoutes = (server, callback)->
-  routes = require(abmvc.app_dir + '/config/routes.coffee')
+  routes = require(TF.app_dir + '/config/routes.coffee')
   reversals = {}
   
   actions = {}
@@ -67,7 +67,7 @@ loadRoutes = (server, callback)->
     
     if not actions[resource]
       # app is being loaded for the first time
-      actions[resource] = require("#{abmvc.app_dir}/apps/#{resource}/actions.coffee")(server)
+      actions[resource] = require("#{TF.app_dir}/apps/#{resource}/actions.coffee")(server)
       if actions[resource] instanceof Function  # only one action was returned
         action = actions[resource]
         actions[resource] = {}
@@ -87,15 +87,15 @@ loadRoutes = (server, callback)->
 
 loadRoute = (server, http_verb, route, action, resource)->
   server[http_verb] route, (request, response)->
-    server.set('views', "#{abmvc.app_dir}/apps/#{resource}/views");
+    server.set('views', "#{TF.app_dir}/apps/#{resource}/views");
     action.call this, request, response
 
 ##|  MISC
 loadHelpers = (server, callback)->
-  helper_locations = [ __dirname + '/helpers', abmvc.app_dir + '/helpers' ]
+  helper_locations = [ __dirname + '/helpers', TF.app_dir + '/helpers' ]
   after_helpers_loaded = _.after(helper_locations.length, callback or ->{})
   
-  # abmvc helpers
+  # TF helpers
   for helper_path in helper_locations
     do ( helper_path )->
       path.exists helper_path, (exists)->
