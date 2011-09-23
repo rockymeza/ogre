@@ -1,0 +1,7 @@
+{
+  "name": "Https Middleware",
+  "description": "Offers decorators to require https, or require http",
+  "version": "0.0.1",
+  "author": "Colin Thomas-Arnold <colinta@mac.com> http://echonull.colinta.com/",
+  "main": "./Https.coffee"
+}

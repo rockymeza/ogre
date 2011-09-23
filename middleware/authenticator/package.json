@@ -1,0 +1,7 @@
+{
+  "name": "Authenticator Middleware",
+  "description": "Authenticates the user, or redirects if they are not authenticated.\nUses the decorator pattern",
+  "version": "0.0.1",
+  "author": "Colin Thomas-Arnold <colinta@mac.com> http://echonull.colinta.com/",
+  "main": "./Authenticator.coffee"
+}

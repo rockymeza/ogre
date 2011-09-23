@@ -1,0 +1,14 @@
+{
+  "name": "abmvc",
+  "description": "A boring MVC",
+  "version": "0.0.1",
+  "author": "Colin Thomas-Arnold <colinta@mac> http://echonull.colinta.com",
+  "homepage": "http://abmvc.colinta.com",
+  "dependencies":
+  {
+    "coffee-script": ">= 1.1.2"
+  },
+  "keywords": ["template", "view", "express", "mvc"],
+  "main": "./abmvc.coffee",
+  "engines": {"node": ">= 0.4.7"}
+}
