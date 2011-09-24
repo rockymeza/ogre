@@ -5,6 +5,7 @@ yaml = require 'yaml'
 _ = require 'underscore'
 
 TF = (server, app_dir)->
+  TF.server = server
   TF.app_dir = app_dir
   server.reverse = (action_name)-> '/url'
   
@@ -16,13 +17,26 @@ TF = (server, app_dir)->
     loadHelpers server, ->
       loadDatabase server, ->
         loadRoutes server, -> 
-          console.log 'TF successfully loaded'
+          console.log 'tierfactory successfully loaded'
 
 ##|
 ##|  OTHER RESOURCES
 ##|
 TF.signedCookieParser = require('./signedCookieParser');
 TF.FileNotFound = require('./errors/FileNotFound')
+TF.wrap = (wrappers..., actions)->
+  ret = {}
+  if actions instanceof Array
+    for action_obj in actions
+      ret = _.extend ret, TF.wrap wrappers..., action_obj
+  else
+    wrappers.reverse()
+    for own key, action of actions
+      for wrapper in wrappers
+        action = wrapper(action)
+      ret[key] = action
+  ret
+
 module.exports = TF
 
 
@@ -67,7 +81,7 @@ loadRoutes = (server, callback)->
     
     if not actions[resource]
       # app is being loaded for the first time
-      actions[resource] = require("#{TF.app_dir}/apps/#{resource}/actions.coffee")(server)
+      actions[resource] = require("#{TF.app_dir}/apps/#{resource}/#{resource}_actions.coffee")(server)
       if actions[resource] instanceof Function  # only one action was returned
         action = actions[resource]
         actions[resource] = {}
@@ -86,9 +100,22 @@ loadRoutes = (server, callback)->
   callback()
 
 loadRoute = (server, http_verb, route, action, resource)->
-  server[http_verb] route, (request, response)->
+  server[http_verb] route, (request, response, next)->
     server.set('views', "#{TF.app_dir}/apps/#{resource}/views");
-    action.call this, request, response
+    
+    # tierfactory additions to express
+    response._locals = {}
+    response.local = (key, value = null)->
+      if key instanceof Array
+        for k in key
+          @local(k)
+      else if key instanceof Object
+        for k, v of key
+          @local(k, v)
+      else
+        @_locals[key] = value
+
+    action.call this, request, response, next
 
 ##|  MISC
 loadHelpers = (server, callback)->

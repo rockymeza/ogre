@@ -1,15 +1,10 @@
 
-TF = require('tierfactory')
+TF = require 'tierfactory'
 mongodb = require('mongodb')
 Crypto = require 'crypto'
 
 Authenticator =
-  users: 'uesrs'
   cookie_name: 'auth.id'
-
-
-  logout: (request, response)->
-    request.signed.clearCookie Authenticator.cookie_name, null
 
 
   isAuthenticated: (request, response, value)->
@@ -29,67 +24,69 @@ Authenticator =
   ##|  Function decorator that redirects if the user IS NOT already authenticated
   ##|
   redirectIfNotAuthenticated: (url)->
-    (next)->
-      (request, response)->
-        if not request.signed.getCookie Authenticator.cookie_name
-          response.redirect url, 301
+    (action)->
+      (request, response, next)->
+        if request.signed.getCookie Authenticator.cookie_name
+          action(request, response, next)
         else
-          next(request, response)
+          # next() if next
+          response.redirect url, 301 # unless next
 
 
   ##|
   ##|  Function decorator that redirects if the user IS already authenticated
   ##|
   redirectIfAuthenticated: (url)->
-    (next)->
-      (request, response)->
+    (action)->
+      (request, response, next)->
         if request.signed.getCookie Authenticator.cookie_name
-          response.redirect url, 301
+          # next() if next
+          response.redirect url, 301 # unless next
         else
-          next(request, response)
+          action(request, response, next)
 
 
   ##|
   ##|  Function decorator that attaches 'user' to the request, based on the signed cookie
   ##|
-  fetchAuthenticatedUser: (next)->
-    (request, response)->
-      on_error = (error)-> throw error
-      on_success = (result)->
-        request.user = result
-        next request, response
+  fetchAuthenticatedUser: (user_collection = 'users')->
+    (action)->
+      (request, response, next)->
+        on_error = (error)-> throw error
+        on_success = (result)->
+          request.user = result
+          action(request, response, next)
 
-      if Authenticator.authenticatedValue(request, response)
-        client = new mongodb.Db(TF.db.name, new mongodb.Server(TF.db.host, TF.db.port))
-        
-        id = new client.bson_serializer.ObjectID(Authenticator.authenticatedValue(request, response))
-        query = { _id: id }
-        client.open (error)->
-          return on_error(error) if error
-          client.collection 'users', (error, collection)->
+        if Authenticator.authenticatedValue(request, response)
+          client = new mongodb.Db(TF.db.name, new mongodb.Server(TF.db.host, TF.db.port))
+          
+          id = new client.bson_serializer.ObjectID(Authenticator.authenticatedValue(request, response))
+          query = { _id: id }
+          client.open (error)->
             return on_error(error) if error
-            collection.findOne query, (error, result)->
+            client.collection user_collection, (error, collection)->
               return on_error(error) if error
-              console.log result
-              if result
-                Authenticator.authenticate request, response, result._id
-                on_success(result)
-              else
-                on_success(null)
-      else
-        on_success(null)
+              collection.findOne query, (error, result)->
+                return on_error(error) if error
+                if result
+                  Authenticator.authenticate request, response, result._id
+                  on_success(result)
+                else
+                  on_success(null)
+        else
+          on_success(null)
 
 
   ##|
   ##|  Function decorator that attaches 'user' to the request, based on POST (or, conceivably, GET) data
   ##|
-  verifyUserCredentials: (username_keys = 'body.login.email', password_keys = 'body.login.password')->
-    (next)->
-      (request, response)->
+  verifyUserCredentials: (user_collection = 'users', username_keys = 'body.login.email', password_keys = 'body.login.password')->
+    (action)->
+      (request, response, next)->
         on_error = (error)-> throw error
         on_success = (result)->
           request.user = result
-          next request, response
+          action(request, response)
 
         # find_in_request uses the dot-separated keys above and searches in request for that value
         username = find_in_request username_keys, request
@@ -101,7 +98,7 @@ Authenticator =
           client = new mongodb.Db(TF.db.name, new mongodb.Server(TF.db.host, TF.db.port))
           client.open (error)->
             return on_error(error) if error
-            client.collection 'users', (error, collection)->
+            client.collection user_collection, (error, collection)->
               return on_error(error) if error
               collection.findOne query, (error, result)->
                 return on_error(error) if error
@@ -118,6 +115,15 @@ Authenticator =
                   on_success(null)
         else
           on_success(null)
+
+  ##|
+  ##|  The opposite of "verifyUserCredentials" - logout the user
+  ##|
+  logout: (cookie_name = Authenticator.cookie_name)->
+    (action)->
+      ->(request, response, next)->
+        request.signed.clearCookie Authenticator.cookie_name, null
+        action(request, response, next)
 
 
 find_in_request = (keys, request)->
